@@ -12,12 +12,12 @@ typedef struct _SYSTEM_PROCESS_INFO_FINAL {
 
 typedef NTSTATUS(WINAPI* PNtQuerySystemInformation)(ULONG, PVOID, ULONG, PULONG);
 
-// --- 전역 변수 ---
+//전역 변수
 PNtQuerySystemInformation g_pTrampoline = nullptr;
 void* g_pfTarget = nullptr;
 const wchar_t* G_TARGET_NAME = L"EX_64Hook.exe";
 
-// --- 트램펄린 설치 (원본 복귀 없는 21바이트 방식) ---
+//트램펄린 설치
 void install_no_return_hook(void* target, void* hookFunc) {
     // WinDbg 분석 결과: 2270(시작) ~ 2284(ret)까지 정확히 21바이트
     const int copySize = 21;
@@ -26,8 +26,8 @@ void install_no_return_hook(void* target, void* hookFunc) {
     g_pTrampoline = (PNtQuerySystemInformation)VirtualAlloc(NULL, 128, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
     if (!g_pTrampoline) return;
 
-    // 2. 원본 ntdll의 실행 코드 21바이트를 통째로 트램펄린에 복사
-    // 여기에는 syscall과 ret이 포함되어 있어 원본으로 돌아갈 필요가 없음
+    // 2. 원본 ntdll의 실행 코드 21바이트를 통째로 트램펄린에 복사.
+    // 여기에는 syscall과 ret이 포함되어 있어 원본으로 돌아갈 필요가 없음.
     memcpy(g_pTrampoline, target, copySize);
 
     // 3. 원본 함수 패치 (절대 Unhook 하지 않음)
@@ -38,8 +38,8 @@ void install_no_return_hook(void* target, void* hookFunc) {
     memcpy(&patch[2], &hookFunc, 8);
     patch[10] = 0xFF; patch[11] = 0xE0; // JMP RAX
 
-    memset(target, 0x90, 16); // 16바이트 지점까지 NOP으로 밀어버림 (test 명령어 파편 제거)
-    memcpy(target, patch, 12); // JMP 설치
+    memset(target, 0x90, 16); // 16바이트 지점까지 NOP으로 밀어버림.
+    memcpy(target, patch, 12); // JMP 설치.
 
     VirtualProtect(target, 16, old, &old);
 }
